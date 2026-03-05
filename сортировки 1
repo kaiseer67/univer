@@ -137,7 +137,7 @@ vector<int> countsort(vector<int> arr) {
     vector<int> countarr(range, 0);
     vector<int> victor;
 
-    for (int i = 0; i < arr.size(); i++) {
+    for (int i = 0; i < arr.size(); i++) { // заполнение вектора количествами чисел
         countarr[arr[i] - minim]++;
     }
 
