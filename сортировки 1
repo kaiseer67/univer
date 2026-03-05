@@ -1,0 +1,292 @@
+#include <locale>
+#include <vector>
+#include <windows.h>
+#include <iostream>
+#include <algorithm>
+#include <chrono>
+#include <random>
+#include <fstream>
+#include <sstream>
+#include <ctime>
+using namespace std;
+
+void SetRuCon() {
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+}
+
+void writeToFile(const vector<int>& arr, const string& filename) {
+    ofstream file(filename);
+    if (file.is_open()) {
+        for (size_t i = 0; i < arr.size(); ++i) {
+            file << arr[i];
+            if (i < arr.size() - 1) {
+                file << ", ";
+            }
+        }
+        file.close();
+        cout << "Файл сохранён: " << filename << endl;
+    }
+    else {
+        cout << "Ошибка создания файла: " << filename << endl;
+    }
+}
+
+int choice3(vector<int> arr) { //опорный элемент
+    int len = arr.size();
+    int first = arr[0], mid = arr[len / 2], last = arr[len - 1];
+
+    if ((first > mid) != (first > last))
+        return first;
+    if ((mid > first) != (mid > last))
+        return mid;
+    return last;
+}
+
+vector<int> readFile() {
+    ifstream file("scr.txt");
+
+    if (!file.is_open()) {
+        cout << "Ошибка: файл scr.txt не найден!" << endl;
+        return {};
+    }
+
+    string line;
+    getline(file, line);
+
+    for (char& c : line) {
+        if (c == '{' || c == '}' || c == ',') {
+            c = ' ';
+        }
+    }
+
+    stringstream ss(line);
+    vector<int> vec;
+    int num;
+    while (ss >> num) {
+        vec.push_back(num);
+    }
+
+    return vec;
+}
+
+vector<int> quicksort(vector<int> arr) {
+    if (arr.size() < 2) {
+        return arr;
+    }
+    if (arr.size() == 2) {
+        if (arr[0] > arr[1]) {
+            int temp_val = arr[0];
+            arr[0] = arr[1];
+            arr[1] = temp_val;
+        }
+        return arr;
+    }
+
+    vector<int> new_arr = {}, less_op = {}, bigger_op = {};
+    int opor = choice3(arr);
+    int op_cnt = 0;
+
+    for (int i = 0; i < arr.size(); i++) {
+        if (arr[i] < opor) {
+            less_op.push_back(arr[i]);
+        }
+        if (arr[i] > opor) {
+            bigger_op.push_back(arr[i]);
+        }
+        if (arr[i] == opor) {
+            op_cnt++;
+        }
+    }
+
+    less_op = quicksort(less_op);
+    bigger_op = quicksort(bigger_op);
+
+    new_arr = less_op;
+    for (int i = 0; i < op_cnt; i++)
+        new_arr.push_back(opor);
+    new_arr.insert(new_arr.end(), bigger_op.begin(), bigger_op.end());
+    return new_arr;
+}
+
+vector<int> insertsort(vector<int> arr) {
+    for (int i = 1; i < arr.size(); i++) {
+        int key = arr[i];
+        int prev_key = i - 1;
+        while (prev_key >= 0 && arr[prev_key] > key) {
+            arr[prev_key + 1] = arr[prev_key];
+            prev_key--;
+        }
+        arr[prev_key + 1] = key;
+    }
+    return arr;
+}
+
+vector<int> countsort(vector<int> arr) {
+    if (arr.empty())
+        return arr;
+
+    int maxim = *max_element(arr.begin(), arr.end());
+    int minim = *min_element(arr.begin(), arr.end());
+    int range = maxim - minim + 1;
+    vector<int> countarr(range, 0);
+    vector<int> victor;
+
+    for (int i = 0; i < arr.size(); i++) {
+        countarr[arr[i] - minim]++;
+    }
+
+    for (int i = 0; i < range; i++) {
+        while (countarr[i] > 0) {
+            victor.push_back(i + minim);
+            countarr[i]--;
+        }
+    }
+    return victor;
+}
+
+vector<int> shakersort(vector<int> arr) {
+    int left = 0;
+    int right = arr.size() - 1;
+    bool swapped = true;
+
+    while (left < right&& swapped) {
+        swapped = false;
+
+        for (int i = left; i < right; i++) {
+            if (arr[i] > arr[i + 1]) {
+                swap(arr[i], arr[i + 1]);
+                swapped = true;
+            }
+        }
+        right--;
+
+        for (int i = right; i > left; i--) {
+            if (arr[i] < arr[i - 1]) {
+                swap(arr[i], arr[i - 1]);
+                swapped = true;
+            }
+        }
+        left++;
+    }
+
+    return arr;
+}
+
+vector<int> radixsort(vector<int> arr) {
+    for (int exp = 1; exp <= 100; exp *= 10) {
+        vector<vector<int>> buckets(10);
+
+        for (int i = 0; i < arr.size(); i++) {
+            int digit = (arr[i] / exp) % 10;
+            buckets[digit].push_back(arr[i]);
+        }
+
+        int index = 0;
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < buckets[i].size(); j++) {
+                int num = buckets[i][j];
+                arr[index] = num;
+                index++;
+            }
+        }
+    }
+    return arr;
+}
+
+int main() {
+    SetRuCon();
+    srand(static_cast<unsigned int>(time(0)));
+
+    cout << "Выберите тип генерации массива:" << endl;
+    cout << "1 - ввод вручную" << endl;
+    cout << "2 - случайная генерация" << endl;
+    cout << "3 - ввод из файла" << endl << endl;
+
+    int vibor_arr;
+    cin >> vibor_arr;
+    cout << endl;
+
+    vector<int> arr;
+    switch (vibor_arr) {
+    case 1:
+        cout << "Введите размер массива" << endl;
+        {
+            int size;
+            cin >> size;
+            cout << "Введите числа в массиве" << endl;
+            for (int i = 0; i < size; i++) {
+                int num;
+                cin >> num;
+                arr.push_back(num);
+            }
+        }
+        cout << endl;
+
+        cout << "Ваш массив" << endl;
+        for (int i = 0; i < arr.size(); i++)
+            cout << arr[i] << " ";
+        break;
+
+    case 2:
+        cout << "Введите количество чисел в массиве" << endl;
+        {
+            int kolvo;
+            cin >> kolvo;
+            for (int i = 0; i < kolvo; i++) {
+                arr.push_back(rand() % 100);
+            }
+        }
+        cout << endl;
+
+        cout << "Ваш массив" << endl;
+        for (int i = 0; i < arr.size(); i++)
+            cout << arr[i] << " ";
+        break;
+
+    case 3:
+        arr = readFile();
+        cout << "Ваш массив" << endl;
+        for (int i = 0; i < arr.size(); i++)
+            cout << arr[i] << " ";
+        break;
+    } // <--- ИСПРАВЛЕНИЕ: закрывающая скобка для switch
+
+    cout << endl << endl;
+
+    vector<int> test;
+    string sortNames[] = { "quicksort", "insertsort", "radixsort", "shakersort", "countsort" };
+
+    for (int i = 1; i <= 5; i++) {
+        vector<int> test_arr = arr;
+        auto start = chrono::high_resolution_clock::now();
+
+        switch (i) {
+        case 1:
+            test_arr = quicksort(test_arr);
+            break;
+        case 2:
+            test_arr = insertsort(test_arr);
+            break;
+        case 3:
+            test_arr = radixsort(test_arr);
+            break;
+        case 4:
+            test_arr = shakersort(test_arr);
+            break;
+        case 5:
+            test_arr = countsort(test_arr);
+            break;
+        }
+
+        auto end = chrono::high_resolution_clock::now();
+        auto duration = chrono::duration_cast<chrono::milliseconds>(end - start);
+
+        cout << sortNames[i - 1] << ": " << duration.count() << " мс" << endl;
+
+        string filename = sortNames[i - 1] + "_result.txt";
+        writeToFile(test_arr, filename);
+    }
+
+    return 0;
+}
