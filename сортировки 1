@@ -15,8 +15,9 @@ void SetRuCon() {
     SetConsoleOutputCP(1251);
 }
 
-void writeToFile(const vector<int>& arr, const string& filename) {
-    ofstream file(filename);
+void writeToFile(const vector<int>& arr, const string& filename, bool append = false, bool showMessage = true) {
+    ofstream file(filename, append ? ios::app : ios::out);
+
     if (file.is_open()) {
         for (size_t i = 0; i < arr.size(); ++i) {
             file << arr[i];
@@ -24,8 +25,12 @@ void writeToFile(const vector<int>& arr, const string& filename) {
                 file << ", ";
             }
         }
+        file << endl;
         file.close();
-        cout << "Файл сохранён: " << filename << endl;
+
+        if (showMessage) {
+            cout << "Файл сохранён: " << filename << endl;
+        }
     }
     else {
         cout << "Ошибка создания файла: " << filename << endl;
@@ -250,7 +255,7 @@ int main() {
         for (int i = 0; i < arr.size(); i++)
             cout << arr[i] << " ";
         break;
-    } // <--- ИСПРАВЛЕНИЕ: закрывающая скобка для switch
+    } 
 
     cout << endl << endl;
 
@@ -285,8 +290,10 @@ int main() {
         cout << sortNames[i - 1] << ": " << duration.count() << " мс" << endl;
 
         string filename = sortNames[i - 1] + "_result.txt";
-        writeToFile(test_arr, filename);
+        writeToFile(test_arr, "resultat", (i > 1), false);
     }
+
+    cout << "Результаты сохранены в файл: resultat" << endl;
 
     return 0;
 }
