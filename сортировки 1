@@ -19,7 +19,7 @@ void writeToFile(const vector<int>& arr, const string& filename, bool append = f
     ofstream file(filename, append ? ios::app : ios::out);
 
     if (file.is_open()) {
-        for (size_t i = 0; i < arr.size(); i++) {
+        for (size_t i = 0; i < arr.size(); ++i) {
             file << arr[i];
             if (i < arr.size() - 1) {
                 file << ", ";
@@ -79,7 +79,7 @@ vector<int> quicksort(vector<int> arr) {
     if (arr.size() < 2) {
         return arr;
     }
-    if (arr.size() == 2) {
+    if (arr.size() == 2) { //сравниваем и меняем местами
         if (arr[0] > arr[1]) {
             int temp_val = arr[0];
             arr[0] = arr[1];
@@ -104,11 +104,11 @@ vector<int> quicksort(vector<int> arr) {
         }
     }
 
-    less_op = quicksort(less_op);
+    less_op = quicksort(less_op); 
     bigger_op = quicksort(bigger_op);
 
     new_arr = less_op;
-    for (int i = 0; i < op_cnt; i++)
+    for (int i = 0; i < op_cnt; i++) //соединяем три массива
         new_arr.push_back(opor);
     new_arr.insert(new_arr.end(), bigger_op.begin(), bigger_op.end());
     return new_arr;
@@ -117,8 +117,8 @@ vector<int> quicksort(vector<int> arr) {
 vector<int> insertsort(vector<int> arr) {
     for (int i = 1; i < arr.size(); i++) {
         int key = arr[i];
-        int prev_key = i - 1;
-        while (prev_key >= 0 && arr[prev_key] > key) {
+        int prev_key = i - 1; //левый элемент
+        while (prev_key >= 0 and arr[prev_key] > key) {
             arr[prev_key + 1] = arr[prev_key];
             prev_key--;
         }
@@ -128,26 +128,33 @@ vector<int> insertsort(vector<int> arr) {
 }
 
 vector<int> countsort(vector<int> arr) {
-    if (arr.empty())
+    if (arr.empty()) {//пустой массив не сортируем
         return arr;
-
-    int maxim = *max_element(arr.begin(), arr.end());
-    int minim = *min_element(arr.begin(), arr.end());
-    int range = maxim - minim + 1;
-    vector<int> countarr(range, 0);
-    vector<int> victor;
-
-    for (int i = 0; i < arr.size(); i++) { // заполнение вектора количествами чисел
-        countarr[arr[i] - minim]++;
     }
 
-    for (int i = 0; i < range; i++) {
-        while (countarr[i] > 0) {
-            victor.push_back(i + minim);
-            countarr[i]--;
+    int max_val = 0;
+    for (int k = 0; k < arr.size(); k++) {//ищем самое большое число
+        if (arr[k] > max_val) {
+            max_val = arr[k];
         }
     }
-    return victor;
+
+    vector<int> counter(max_val + 1, 0);
+
+    for (int i = 0; i < arr.size(); i++) { //прибавляем к счетчику
+        int num = arr[i];          
+        counter[num] = counter[num] + 1;  
+    }
+
+    vector<int> result;
+    for (int chislo = 0; chislo <= max_val; chislo++) { //отсортированный массив
+        while (counter[chislo] > 0) {
+            result.push_back(chislo);      
+            counter[chislo] = counter[chislo] - 1;  
+        }
+    }
+
+    return result;
 }
 
 vector<int> shakersort(vector<int> arr) {
@@ -158,7 +165,7 @@ vector<int> shakersort(vector<int> arr) {
     while (left < right&& swapped) {
         swapped = false;
 
-        for (int i = left; i < right; i++) {
+        for (int i = left; i < right; i++) { //слева направо
             if (arr[i] > arr[i + 1]) {
                 swap(arr[i], arr[i + 1]);
                 swapped = true;
@@ -166,7 +173,7 @@ vector<int> shakersort(vector<int> arr) {
         }
         right--;
 
-        for (int i = right; i > left; i--) {
+        for (int i = right; i > left; i--) { //справа налево
             if (arr[i] < arr[i - 1]) {
                 swap(arr[i], arr[i - 1]);
                 swapped = true;
@@ -179,19 +186,20 @@ vector<int> shakersort(vector<int> arr) {
 }
 
 vector<int> radixsort(vector<int> arr) {
-    for (int exp = 1; exp <= 100; exp *= 10) {
+    int max_val = *max_element(arr.begin(), arr.end()); 
+
+    for (int exp = 1; max_val / exp > 0; exp *= 10) {  //ищем количество разрядов у мах
         vector<vector<int>> buckets(10);
 
-        for (int i = 0; i < arr.size(); i++) {
+        for (int i = 0; i < arr.size(); i++) { 
             int digit = (arr[i] / exp) % 10;
             buckets[digit].push_back(arr[i]);
         }
 
         int index = 0;
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 10; i++) { //возвращаем исходный массив
             for (int j = 0; j < buckets[i].size(); j++) {
-                int num = buckets[i][j];
-                arr[index] = num;
+                arr[index] = buckets[i][j];
                 index++;
             }
         }
@@ -257,7 +265,7 @@ int main() {
         break;
     } 
 
-    cout << endl << endl;
+    cout << endl;
 
     vector<int> test;
     string sortNames[] = { "quicksort", "insertsort", "radixsort", "shakersort", "countsort" };
