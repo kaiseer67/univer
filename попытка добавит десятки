@@ -1,0 +1,323 @@
+#include <locale>
+#include <vector>
+#include <windows.h>
+#include <iostream>
+#include <algorithm>
+#include <chrono>
+#include <random>
+#include <fstream>
+#include <sstream>
+#include <ctime>
+#include <iomanip>
+using namespace std;
+
+void SetRuCon() {
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+}
+
+void writeToFile(const vector<int>& arr, const string& filename, bool append = false, bool showMessage = true) {
+    ofstream file(filename, append ? ios::app : ios::out);
+
+    if (file.is_open()) {
+        for (size_t i = 0; i < arr.size(); ++i) {
+            file << arr[i];
+            if (i < arr.size() - 1) {
+                file << ", ";
+            }
+        }
+        file << endl;
+        file.close();
+
+        if (showMessage) {
+            cout << "Файл сохранён: " << filename << endl;
+        }
+    }
+    else {
+        cout << "Ошибка создания файла: " << filename << endl;
+    }
+}
+
+int choice3(vector<int> arr) { //опорный элемент
+    int len = arr.size();
+    int first = arr[0], mid = arr[len / 2], last = arr[len - 1];
+
+    if ((first > mid) != (first > last))
+        return first;
+    if ((mid > first) != (mid > last))
+        return mid;
+    return last;
+}
+
+vector<int> readFile() {
+    ifstream file("scr.txt");
+
+    if (!file.is_open()) {
+        cout << "Ошибка: файл scr.txt не найден!" << endl;
+        return {};
+    }
+
+    string line;
+    getline(file, line);
+
+    for (char& c : line) {
+        if (c == '{' || c == '}' || c == ',') {
+            c = ' ';
+        }
+    }
+
+    stringstream ss(line);
+    vector<int> vec;
+    int num;
+    while (ss >> num) {
+        vec.push_back(num);
+    }
+
+    return vec;
+}
+
+vector<int> quicksort(vector<int> arr) {
+    if (arr.size() < 2) {
+        return arr;
+    }
+    if (arr.size() == 2) { //сравниваем и меняем местами
+        if (arr[0] > arr[1]) {
+            int temp_val = arr[0];
+            arr[0] = arr[1];
+            arr[1] = temp_val;
+        }
+        return arr;
+    }
+
+    vector<int> new_arr = {}, less_op = {}, bigger_op = {};
+    int opor = choice3(arr);
+    int op_cnt = 0;
+
+    for (int i = 0; i < arr.size(); i++) {
+        if (arr[i] < opor) {
+            less_op.push_back(arr[i]);
+        }
+        if (arr[i] > opor) {
+            bigger_op.push_back(arr[i]);
+        }
+        if (arr[i] == opor) {
+            op_cnt++;
+        }
+    }
+
+    less_op = quicksort(less_op); 
+    bigger_op = quicksort(bigger_op);
+
+    new_arr = less_op;
+    for (int i = 0; i < op_cnt; i++) //соединяем три массива
+        new_arr.push_back(opor);
+    new_arr.insert(new_arr.end(), bigger_op.begin(), bigger_op.end());
+    return new_arr;
+}
+
+vector<int> insertsort(vector<int> arr) {
+    for (int i = 1; i < arr.size(); i++) {
+        int key = arr[i];
+        int prev_key = i - 1; //левый элемент
+        while (prev_key >= 0 and arr[prev_key] > key) {
+            arr[prev_key + 1] = arr[prev_key];
+            prev_key--;
+        }
+        arr[prev_key + 1] = key;
+    }
+    return arr;
+}
+
+vector<int> countsort(vector<int> arr) {
+    if (arr.empty()) {//пустой массив не сортируем
+        return arr;
+    }
+
+    int max_val = 0;
+    for (int k = 0; k < arr.size(); k++) {//ищем самое большое число
+        if (arr[k] > max_val) {
+            max_val = arr[k];
+        }
+    }
+
+    vector<int> counter(max_val + 1, 0);
+
+    for (int i = 0; i < arr.size(); i++) { //прибавляем к счетчику
+        int num = arr[i];          
+        counter[num] = counter[num] + 1;  
+    }
+
+    vector<int> result;
+    for (int chislo = 0; chislo <= max_val; chislo++) { //отсортированный массив
+        while (counter[chislo] > 0) {
+            result.push_back(chislo);      
+            counter[chislo] = counter[chislo] - 1;  
+        }
+    }
+
+    return result;
+}
+
+vector<int> shakersort(vector<int> arr) {
+    int left = 0;
+    int right = arr.size() - 1;
+    bool swapped = true;
+
+    while (left < right&& swapped) {
+        swapped = false;
+
+        for (int i = left; i < right; i++) { //слева направо
+            if (arr[i] > arr[i + 1]) {
+                swap(arr[i], arr[i + 1]);
+                swapped = true;
+            }
+        }
+        right--;
+
+        for (int i = right; i > left; i--) { //справа налево
+            if (arr[i] < arr[i - 1]) {
+                swap(arr[i], arr[i - 1]);
+                swapped = true;
+            }
+        }
+        left++;
+    }
+
+    return arr;
+}
+
+vector<int> radixsort(vector<int> arr) {
+    int max_val = *max_element(arr.begin(), arr.end()); 
+
+    for (int exp = 1; max_val / exp > 0; exp *= 10) {  //ищем количество разрядов у мах
+        vector<vector<int>> buckets(10);
+
+        for (int i = 0; i < arr.size(); i++) { 
+            int digit = (arr[i] / exp) % 10;
+            buckets[digit].push_back(arr[i]);
+        }
+
+        int index = 0;
+        for (int i = 0; i < 10; i++) { //возвращаем исходный массив
+            for (int j = 0; j < buckets[i].size(); j++) {
+                arr[index] = buckets[i][j];
+                index++;
+            }
+        }
+    }
+    return arr;
+}
+
+int main() {
+    SetRuCon();
+    srand(static_cast<unsigned int>(time(0)));
+
+    cout << "Выберите тип генерации массива:" << endl;
+    cout << "1 - ввод вручную" << endl;
+    cout << "2 - случайная генерация" << endl;
+    cout << "3 - ввод из файла" << endl << endl;
+
+    int vibor_arr;
+    cin >> vibor_arr;
+    cout << endl;
+
+    vector<int> arr;
+    switch (vibor_arr) {
+    case 1:
+        cout << "Введите размер массива" << endl;
+        {
+            int size;
+            cin >> size;
+            cout << "Введите числа в массиве" << endl;
+            for (int i = 0; i < size; i++) {
+                int num;
+                cin >> num;
+                arr.push_back(num);
+            }
+        }
+        cout << endl;
+
+        cout << "Ваш массив" << endl;
+        for (int i = 0; i < arr.size(); i++)
+            cout << arr[i] << " ";
+        break;
+
+    case 2:
+        cout << "Введите количество чисел в массиве" << endl;
+        {
+            int kolvo;
+            cin >> kolvo;
+            for (int i = 0; i < kolvo; i++) {
+                arr.push_back(rand() % 100);
+            }
+        }
+        cout << endl;
+
+        cout << "Ваш массив" << endl;
+        for (int i = 0; i < arr.size(); i++)
+            cout << arr[i] << " ";
+        break;
+
+    case 3:
+        arr = readFile();
+        cout << "Ваш массив" << endl;
+        for (int i = 0; i < arr.size(); i++)
+            cout << arr[i] << " ";
+        break;
+    } 
+
+    cout << endl;
+
+    vector<int> test;
+    string sortNames[] = { "quicksort", "insertsort", "radixsort", "shakersort", "countsort" };
+
+    for (int i = 1; i <= 5; i++) {
+        vector<int> test_arr = arr;
+        auto start = chrono::high_resolution_clock::now();
+        // auto start = chrono::high_resolution_clock::now();
+
+        switch (i) {
+        case 1:
+            test_arr = quicksort(test_arr);
+            break;
+        case 2:
+            test_arr = insertsort(test_arr);
+            break;
+        case 3:
+            test_arr = radixsort(test_arr);
+            break;
+        case 4:
+            test_arr = shakersort(test_arr);
+            break;
+        case 5:
+            test_arr = countsort(test_arr);
+            break;
+        }
+
+
+
+
+        //auto end = chrono::high_resolution_clock::now();
+
+        //auto duration = chrono::duration_cast<chrono::milliseconds>(end - start);
+        //double ms = duration.count();
+
+        //cout << sortNames[i - 1] << ": " << ms << fixed << setprecision(10) << " мс" << endl;
+        
+        
+        auto end = chrono::high_resolution_clock::now();
+
+        chrono::duration<double, microseconds> ms_double = (end - start);
+
+        cout << fixed << setprecision(5) << sortNames[i - 1] << ": " << ms_double.count() << " мкс" << endl;
+
+
+
+        string filename = sortNames[i - 1] + "_result.txt";
+        writeToFile(test_arr, "resultat", sortNames[i - 1], (i > 1), false);
+    }
+
+    cout << "Результаты сохранены в файл: resultat" << endl;
+
+    return 0;
+}
