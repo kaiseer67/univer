@@ -274,7 +274,6 @@ int main() {
     for (int i = 1; i <= 5; i++) {
         vector<int> test_arr = arr;
         auto start = chrono::high_resolution_clock::now();
-        // auto start = chrono::high_resolution_clock::now();
 
         switch (i) {
         case 1:
@@ -295,26 +294,14 @@ int main() {
         }
 
 
-
-
-        //auto end = chrono::high_resolution_clock::now();
-
-        //auto duration = chrono::duration_cast<chrono::milliseconds>(end - start);
-        //double ms = duration.count();
-
-        //cout << sortNames[i - 1] << ": " << ms << fixed << setprecision(10) << " мс" << endl;
-        
-        
         auto end = chrono::high_resolution_clock::now();
 
-        chrono::duration<double, microseconds> ms_double = (end - start);
-
-        cout << fixed << setprecision(5) << sortNames[i - 1] << ": " << ms_double.count() << " мкс" << endl;
-
+        auto us = chrono::duration_cast<chrono::microseconds>(end - start).count(); 
+        cout << fixed << setprecision(5) << sortNames[i - 1] << ": " << us / 1000.0 << " мс" << endl;
 
 
         string filename = sortNames[i - 1] + "_result.txt";
-        writeToFile(test_arr, "resultat", sortNames[i - 1], (i > 1), false);
+        writeToFile(test_arr, "resultat", (i > 1), false);
     }
 
     cout << "Результаты сохранены в файл: resultat" << endl;
