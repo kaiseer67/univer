@@ -164,11 +164,11 @@ vector<int> estestven(vector<int> arr) {
 
     runs = serii.size();
 
-    while (serii.size() > 1) {
+    while (serii.size() > 1) { //сливаем пока не останется одна серия
         vector<vector<int>> new_serii;  // новые серии после слияния
 
         for (int i = 0; i < serii.size(); i += 2) {
-            if (i + 1 < serii.size()) { 
+            if (i + 1 < serii.size()) {//проверяем есть ли пара для слияния
                 vector<int> merged; //соединяем две серии
                 int p1 = 0, p2 = 0;
                 vector<int> left = serii[i];       
@@ -188,7 +188,7 @@ vector<int> estestven(vector<int> arr) {
                     }
                 }
 
-                while (p1 < left.size()) {
+                while (p1 < left.size()) { //докопируем остатки они уже отсортированы
                     merged.push_back(left[p1]);
                     moves++;
                     p1++;
