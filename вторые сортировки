@@ -10,30 +10,24 @@
 #include <ctime>
 #include <iomanip>
 using namespace std;
-
+ 
 void SetRuCon() {
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
 }
-
-
+ 
+ 
 int comparisons = 0;
 int moves = 0;
 int runs = 0;
-
-
-void writeToFile(const vector<int> arr, string filename, bool append = false, bool showMessage = true) {
-    ofstream file;
-    
-    if (append) {
-        file.open(filename, ios::app);//если тру открываем для дописывания в конец
-    }
-    else {
-        file.open(filename, ios::out);//если фолс открываем для перезаписи 
-    }
-
+ 
+//WTF ???
+void writeToFile(vector<int> arr, string filename) { //?
+    ofstream file(filename); //? всегда ткрыт в режиме перезаписи
+ 
+ 
     if (file.is_open()) {
-        for (size_t i = 0; i < arr.size(); ++i) {
+        for (size_t i = 0; i < arr.size(); i++) {
             file << arr[i];
             if (i < arr.size() - 1) {
                 file << ", ";
@@ -41,53 +35,46 @@ void writeToFile(const vector<int> arr, string filename, bool append = false, bo
         }
         file << endl;
         file.close();
-
-        if (showMessage) {
-            cout << "Файл сохранён: " << filename << endl;
-        }
+ 
     }
     else {
         cout << "Ошибка создания файла: " << filename << endl;
     }
 }
-
-
+ 
+ 
 vector<int> readFile() {
     ifstream file("scr.txt");
-
+ 
     if (!file.is_open()) {
         cout << "Ошибка: файл scr.txt не найден!" << endl;
         return {};
     }
-
+ 
     string line;
     getline(file, line);
-
-    for (char& c : line) {
-        if (c == '{' || c == '}' || c == ',') {
-            c = ' ';
+ 
+    stringstream ss(line);
+    string word;
+    vector<int> vec;
+    while (getline(ss, word, ' ')) {
+        if (!word.empty()) {
+            vec.push_back(stoi(word));
         }
     }
-
-    stringstream ss(line);
-    vector<int> vec;
-    int num;
-    while (ss >> num) {
-        vec.push_back(num);
-    }
-
+ 
     return vec;
 }
-
-
+ 
+ 
 vector<int> pryamoe(vector<int> arr) {
     if (arr.size() <= 1) {
         return arr;
     }
-
+ 
     int mid = arr.size() / 2;
-    vector<int> left, right; 
-
+    vector<int> left, right;
+ 
     for (int i = 0; i < mid; i++) { //массивы меньше мида
         left.push_back(arr[i]);
         moves++;
@@ -96,13 +83,13 @@ vector<int> pryamoe(vector<int> arr) {
         right.push_back(arr[i]);
         moves++;
     }
-
+ 
     left = pryamoe(left); //вызываем для деления пополам
     right = pryamoe(right);//аналогично
-
+ 
     vector<int> result;
     int i = 0, j = 0;
-
+ 
     while (i < left.size() and j < right.size()) { //само сравнение
         comparisons++;
         if (left[i] <= right[j]) {
@@ -116,35 +103,35 @@ vector<int> pryamoe(vector<int> arr) {
             moves++;
         }
     }
-
+ 
     while (i < left.size()) {  //скопировать остатки из массива
         result.push_back(left[i]);
         i++;
         moves++;
     }
-
+ 
     while (j < right.size()) { //аналогично
         result.push_back(right[j]);
         j++;
         moves++;
     }
-
+ 
     return result; //возврат отсортированного массива
 }
-
+ 
 vector<int> estestven(vector<int> arr) {
     if (arr.size() <= 1) {
         return arr;
     }
-
-
-
+ 
+ 
+ 
     vector<vector<int>> serii;      // все найденные серии
-    vector<int> tekseriya;          
-
-    tekseriya.push_back(arr[0]);  
+    vector<int> tekseriya;
+ 
+    tekseriya.push_back(arr[0]);
     moves++;
-
+ 
     for (int i = 1; i < arr.size(); i++) {
         comparisons++;
         if (arr[i] >= arr[i - 1]) {
@@ -161,19 +148,19 @@ vector<int> estestven(vector<int> arr) {
     }
     serii.push_back(tekseriya);  // не забываем последнюю серию
     moves++;
-
+ 
     runs = serii.size();
-
+ 
     while (serii.size() > 1) { //сливаем пока не останется одна серия
         vector<vector<int>> new_serii;  // новые серии после слияния
-
+ 
         for (int i = 0; i < serii.size(); i += 2) {
             if (i + 1 < serii.size()) {//проверяем есть ли пара для слияния
                 vector<int> merged; //соединяем две серии
                 int p1 = 0, p2 = 0;
-                vector<int> left = serii[i];       
-                vector<int> right = serii[i + 1];  
-
+                vector<int> left = serii[i];
+                vector<int> right = serii[i + 1];
+ 
                 while (p1 < left.size() and p2 < right.size()) {
                     comparisons++;
                     if (left[p1] <= right[p2]) { //сравниваем элементы
@@ -187,7 +174,7 @@ vector<int> estestven(vector<int> arr) {
                         moves++;
                     }
                 }
-
+ 
                 while (p1 < left.size()) { //докопируем остатки они уже отсортированы
                     merged.push_back(left[p1]);
                     moves++;
@@ -198,7 +185,7 @@ vector<int> estestven(vector<int> arr) {
                     moves++;
                     p2++;
                 }
-
+ 
                 new_serii.push_back(merged);
                 moves++;
             }
@@ -207,15 +194,15 @@ vector<int> estestven(vector<int> arr) {
                 moves++;
             }
         }
-
+ 
         serii = new_serii;
         moves++;
     }
-
-    return serii[0];  
+ 
+    return serii[0];
 }
-
-
+ 
+ 
 void printMetrics(string sortName, double time_ms) {
     cout << sortName << endl;
     cout << "Время выполнения: " << fixed << setprecision(5) << time_ms << " мс" << endl;
@@ -224,19 +211,20 @@ void printMetrics(string sortName, double time_ms) {
     cout << "Количество серий: " << runs << endl;
     cout << endl;
 }
-
+ 
 int main() {
     SetRuCon();
-
+    srand(static_cast<unsigned int>(time(0)));
+ 
     cout << "Выберите тип генерации массива:" << endl;
     cout << "1 - ввод вручную" << endl;
     cout << "2 - случайная генерация" << endl;
     cout << "3 - ввод из файла" << endl << endl;
-
+ 
     int vibor_arr;
     cin >> vibor_arr;
     cout << endl;
-
+ 
     vector<int> arr;
     switch (vibor_arr) {
     case 1:
@@ -256,7 +244,7 @@ int main() {
         for (int i = 0; i < arr.size(); i++)
             cout << arr[i] << " ";
         break;
-
+ 
     case 2:
         cout << "Введите количество чисел в массиве" << endl;
         {
@@ -271,7 +259,7 @@ int main() {
         for (int i = 0; i < arr.size(); i++)
             cout << arr[i] << " ";
         break;
-
+ 
     case 3:
         arr = readFile();
         cout << "Ваш массив" << endl;
@@ -279,21 +267,21 @@ int main() {
             cout << arr[i] << " ";
         break;
     }
-
+ 
     cout << endl << endl;
-
+ 
     string sortNames[] = { "pryamoe", "estestven" };
-
-
+ 
+ 
     for (int i = 0; i < 2; i++) {
         vector<int> test_arr = arr;
-
+ 
         auto start = chrono::high_resolution_clock::now();
-
+ 
         comparisons = 0;
         moves = 0;
         runs = 0;
-
+ 
         switch (i) {
         case 0:
             test_arr = pryamoe(test_arr);
@@ -302,17 +290,17 @@ int main() {
             test_arr = estestven(test_arr);
             break;
         }
-
+ 
         auto end = chrono::high_resolution_clock::now();
         double time_ms = chrono::duration<double, milli>(end - start).count();
-
+ 
         printMetrics(sortNames[i], time_ms);
-
-
-        writeToFile(test_arr, "resultat", (i > 0), false);
+ 
+ 
+        writeToFile(test_arr, "resultat.txt");
     }
-
+ 
     cout << "Результаты сохранены в файл: resultat" << endl;
-
+ 
     return 0;
 }
