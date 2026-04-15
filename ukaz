@@ -3,6 +3,7 @@
 #include <map>
 #include <windows.h>
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -58,7 +59,7 @@ void moveFront(int id) { //задача в начало
     if (t->prev != nullptr) { // Если есть задача перед нашей
         t->prev->next = t->next;
     }
-    if (t->next != nullptr) { 
+    if (t->next != nullptr) {
         t->next->prev = t->prev;
     }
     else {
@@ -68,7 +69,7 @@ void moveFront(int id) { //задача в начало
     //вставляем задачу в начало
     t->prev = nullptr;       //перед ней теперь ничего
     t->next = head;          //после неё - старая голова
-    head->prev = t;          
+    head->prev = t;
     head = t;                //новая задача становится головой
 }
 
@@ -100,7 +101,7 @@ void insertAfter(int targetId, int newId, int value) { //создает нову
         tail = t; //если целевая была концом, обновляем конец
     }
 
-    target->next = t; 
+    target->next = t;
     registry[newId] = t;  //запоминаем в регистре
 }
 
@@ -141,7 +142,7 @@ void remove(int id) {
         return;
     }
 
-    Task* t = registry[id]; 
+    Task* t = registry[id];
 
     if (t->prev != nullptr) { //вырезаем из списка
         t->prev->next = t->next;
@@ -150,7 +151,7 @@ void remove(int id) {
         head = t->next; // если удаляем начало, то новое начало следующее
     }
 
-    if (t->next != nullptr) {   
+    if (t->next != nullptr) {
         t->next->prev = t->prev;
     }
     else {
@@ -158,12 +159,15 @@ void remove(int id) {
     }
 
     registry.erase(id);  //удаляем из карты
-    delete t;            
+    delete t;
 }
 
 
 int main() {
     SetRuCon();
+
+    ifstream fin("a.txt");
+    ofstream fout("b.txt");
 
     int n;
     cout << "Введите количество операций: " << endl;
@@ -220,7 +224,19 @@ int main() {
         else {
             cout << "Неизвестная команда" << endl;
         }
-    } 
+    }
 
-    return 0; 
-} 
+    cout << "Итоговый список задач" << endl;
+    if (head == nullptr) {
+        cout << "Список пуст" << endl;
+    }
+    else {
+        Task* current = head;
+        while (current != nullptr) {
+            cout << "id: " << current->id << " Значение: " << current->value << endl;
+            current = current->next;
+        }
+    }
+
+    return 0;
+}
