@@ -4,6 +4,8 @@
 #include <windows.h>
 #include <iostream>
 #include <fstream>
+#include <ctime>
+
 
 using namespace std;
 
@@ -164,17 +166,21 @@ void remove(int id) {
 int main() {
     SetRuCon();
 
-    ifstream fin("input.txt");
+    ifstream fin("a.txt");
     int n;
 
-    // Проверяем, открылся ли файл
+   // auto start = high_resolution_clock::now();
+
+
+
     if (fin.is_open()) {
-        cout << "Чтение команд из input.txt..." << endl;
-        fin >> n; // Читаем количество операций из файла
+        clock_t start = clock();
+        //auto start = high_resolution_clock::now();
+        fin >> n; 
 
         for (int i = 0; i < n; i++) {
             string cmd;
-            fin >> cmd; // Читаем команду из файла
+            fin >> cmd; 
 
             if (cmd == "add") {
                 int id, val; fin >> id >> val;
@@ -201,10 +207,15 @@ int main() {
                 spliceRange(idFrom, idTo);
             }
         }
-        fin.close();
+        clock_t end = clock();
+            //  auto end = high_resolution_clock::now();
+           // auto duration = duration_cast<milliseconds>(end - start);
+           // cout << "Время выполнения: " << duration.count() << " мс" << endl;
+            double time = double(end - start) / CLOCKS_PER_SEC;
+        cout << time << "\n";
+            fin.close();
     }
     else {
-        // Если файла нет — работаем в ручном режиме
         cout << "Введите количество операций: " << endl;
         cin >> n;
 
@@ -255,14 +266,14 @@ int main() {
         }
     }
 
-    // Вывод итогового списка
+
     cout << "\nИтоговый список задач:" << endl;
     if (head == nullptr) {
         cout << "Список пуст" << endl;
-    }    else {
+    }
+    else {
         Task* current = head;
         int count = 0;
-        // Выводим первые 20 задач, чтобы не засорять консоль при 100k элементах
         while (current != nullptr && count < 20) {
             cout << "id: " << current->id << " Значение: " << current->value << endl;
             current = current->next;
