@@ -161,82 +161,118 @@ void remove(int id) {
     registry.erase(id);  //удаляем из карты
     delete t;
 }
-
-
 int main() {
     SetRuCon();
 
-    ifstream fin("a.txt");
-    ofstream fout("b.txt");
-
+    ifstream fin("input.txt");
     int n;
-    cout << "Введите количество операций: " << endl;
-    cin >> n;
 
-    for (int i = 0; i < n; i++) {
+    // Проверяем, открылся ли файл
+    if (fin.is_open()) {
+        cout << "Чтение команд из input.txt..." << endl;
+        fin >> n; // Читаем количество операций из файла
 
-        cout << "Введите команду (add, movetofront, getvalue, remove, insertafter, splicerange): ";
-        string cmd;
-        cin >> cmd;
+        for (int i = 0; i < n; i++) {
+            string cmd;
+            fin >> cmd; // Читаем команду из файла
 
-        if (cmd == "add") {
-            int id, val;
-            cout << "Введите ID и значение: ";
-            cin >> id >> val;
-            add(id, val);
-            //cout << "Задача добавлена в конец" << endl;
+            if (cmd == "add") {
+                int id, val; fin >> id >> val;
+                add(id, val);
+            }
+            else if (cmd == "movetofront") {
+                int id; fin >> id;
+                moveFront(id);
+            }
+            else if (cmd == "getvalue") {
+                int id; fin >> id;
+                getValue(id);
+            }
+            else if (cmd == "remove") {
+                int id; fin >> id;
+                remove(id);
+            }
+            else if (cmd == "insertafter") {
+                int targetId, newId, val; fin >> targetId >> newId >> val;
+                insertAfter(targetId, newId, val);
+            }
+            else if (cmd == "splicerange") {
+                int idFrom, idTo; fin >> idFrom >> idTo;
+                spliceRange(idFrom, idTo);
+            }
         }
-        else if (cmd == "movetofront") {
-            int id;
-            cout << "Введите ID задачи: ";
-            cin >> id;
-            moveFront(id);
-            //cout << "Задача перемещена в начало" << endl;
-        }
-        else if (cmd == "getvalue") {
-            int id;
-            cout << "Введите ID задачи: ";
-            cin >> id;
-            cout << "Результат: ";
-            getValue(id);
-        }
-        else if (cmd == "remove") {
-            int id;
-            cout << "Введите ID задачи: ";
-            cin >> id;
-            remove(id);
-            //cout << "Задача удалена" << endl;
-        }
-        else if (cmd == "insertafter") {
-            int targetId, newId, val;
-            cout << "Введите ID целевой, новый ID и значение: ";
-            cin >> targetId >> newId >> val;
-            insertAfter(targetId, newId, val);
-            //cout << "Задача вставлена после указанной" << endl;
-        }
-        else if (cmd == "splicerange") {
-            int idFrom, idTo;
-            cout << "Введите ID начала и конца диапазона: ";
-            cin >> idFrom >> idTo;
-            spliceRange(idFrom, idTo);
-            //cout << "Диапазон перемещен в начало" << endl;
-        }
-        else {
-            cout << "Неизвестная команда" << endl;
-        }
-    }
-
-    cout << "Итоговый список задач" << endl;
-    if (head == nullptr) {
-        cout << "Список пуст" << endl;
+        fin.close();
     }
     else {
-        Task* current = head;
-        while (current != nullptr) {
-            cout << "id: " << current->id << " Значение: " << current->value << endl;
-            current = current->next;
+        // Если файла нет — работаем в ручном режиме
+        cout << "Введите количество операций: " << endl;
+        cin >> n;
+
+        for (int i = 0; i < n; i++) {
+            cout << "Введите команду (add, movetofront, getvalue, remove, insertafter, splicerange): ";
+            string cmd;            cin >> cmd;
+
+            if (cmd == "add") {
+                int id, val;
+                cout << "Введите ID и значение: ";
+                cin >> id >> val;
+                add(id, val);
+            }
+            else if (cmd == "movetofront") {
+                int id;
+                cout << "Введите ID задачи: ";
+                cin >> id;
+                moveFront(id);
+            }
+            else if (cmd == "getvalue") {
+                int id;
+                cout << "Введите ID задачи: ";
+                cin >> id;
+                cout << "Результат: ";
+                getValue(id);
+            }
+            else if (cmd == "remove") {
+                int id;
+                cout << "Введите ID задачи: ";
+                cin >> id;
+                remove(id);
+            }
+            else if (cmd == "insertafter") {
+                int targetId, newId, val;
+                cout << "Введите ID целевой, новый ID и значение: ";
+                cin >> targetId >> newId >> val;
+                insertAfter(targetId, newId, val);
+            }
+            else if (cmd == "splicerange") {
+                int idFrom, idTo;
+                cout << "Введите ID начала и конца диапазона: ";
+                cin >> idFrom >> idTo;
+                spliceRange(idFrom, idTo);
+            }
+            else {
+                cout << "Неизвестная команда" << endl;
+            }
         }
     }
+
+    // Вывод итогового списка
+    cout << "\nИтоговый список задач:" << endl;
+    if (head == nullptr) {
+        cout << "Список пуст" << endl;
+    }    else {
+        Task* current = head;
+        int count = 0;
+        // Выводим первые 20 задач, чтобы не засорять консоль при 100k элементах
+        while (current != nullptr && count < 20) {
+            cout << "id: " << current->id << " Значение: " << current->value << endl;
+            current = current->next;
+            count++;
+        }
+        if (registry.size() > 20) {
+            cout << "... и ещё " << (registry.size() - 20) << " задач" << endl;
+        }
+    }
+    cout << "Всего задач: " << registry.size() << endl;
 
     return 0;
 }
