@@ -55,42 +55,33 @@ void moveFront(int id) { //задача в начало
         return;
     }
 
-    //вырезаем задачу из текущего места
-
-    // Если есть задача перед нашей
-    if (t->prev != nullptr) {
+    if (t->prev != nullptr) { // Если есть задача перед нашей
         t->prev->next = t->next;
     }
-
-    // Если есть задача после нашей
-    if (t->next != nullptr) {
+    if (t->next != nullptr) { 
         t->next->prev = t->prev;
     }
-    // Если нашей задачи была последней, обновляем конец
     else {
-        tail = t->prev;
+        tail = t->prev; //если наша задача была последней, то обновляем конец
     }
 
     //вставляем задачу в начало
     t->prev = nullptr;       //перед ней теперь ничего
     t->next = head;          //после неё - старая голова
-    head->prev = t;          //старая голова смотрит на новую
+    head->prev = t;          
     head = t;                //новая задача становится головой
 }
 
 
 void getValue(int id) {
-    //если задачи нет - выходим
-    if (registry.find(id) == registry.end()) {
+    if (registry.find(id) == registry.end()) { //если задачи нет - выходим
         return;
     }
-    //берем задачу и выводим значение
-    cout << registry[id]->value << endl;
+    cout << registry[id]->value << endl; //берем задачу и выводим значение
 }
 
-void insertAfter(int targetId, int newId, int value) {
-    //проверяем, есть ли целевая задача
-    if (registry.find(targetId) == registry.end()) {
+void insertAfter(int targetId, int newId, int value) { //создает новую задачу и вставляет после указанной
+    if (registry.find(targetId) == registry.end()) { //проверяем, есть ли целевая задача
         return;
     }
 
@@ -99,23 +90,21 @@ void insertAfter(int targetId, int newId, int value) {
     t->id = newId;
     t->value = value;
 
-    //вставляем после target
-    t->next = target->next;
+    t->next = target->next; //вставляем после целево
     t->prev = target;
 
     if (target->next != nullptr) {
         target->next->prev = t;
     }
     else {
-        //если target был хвостом, обновляем хвост
-        tail = t;
+        tail = t; //если целевая была концом, обновляем конец
     }
 
-    target->next = t;
+    target->next = t; 
     registry[newId] = t;  //запоминаем в регистре
 }
 
-void spliceRange(int idFrom, int idTo) {
+void spliceRange(int idFrom, int idTo) { //диапозон кидает в начало
     if (registry.find(idFrom) == registry.end() or registry.find(idTo) == registry.end()) {
         return;
     }
@@ -127,24 +116,20 @@ void spliceRange(int idFrom, int idTo) {
         return;
     }
 
-    //запоминаем соседей диапазона
-    Task* beforeFrom = from->prev;
+    Task* beforeFrom = from->prev; //запоминаем соседей диапазона
     Task* afterTo = to->next;
 
-    //вырезаем диапазон [from, to]
-    if (beforeFrom != nullptr) {
+    if (beforeFrom != nullptr) { //вытаскиваем диапазон 
         beforeFrom->next = afterTo;
     }
     if (afterTo != nullptr) {
         afterTo->prev = beforeFrom;
     }
     else {
-        //если to был хвостом
-        tail = beforeFrom;
+        tail = beforeFrom; //если to был концом
     }
 
-    //вставляем диапазон в начало
-    from->prev = nullptr;
+    from->prev = nullptr;//вставляем диапазон в начало
     to->next = head;
     head->prev = to;
     head = from;
@@ -152,28 +137,24 @@ void spliceRange(int idFrom, int idTo) {
 
 
 void remove(int id) {
-    //если задачи нет - выходим
-    if (registry.find(id) == registry.end()) {
+    if (registry.find(id) == registry.end()) {//проверка
         return;
     }
 
     Task* t = registry[id]; 
 
-    //вырезаем из списка
-    if (t->prev != nullptr) {
+    if (t->prev != nullptr) { //вырезаем из списка
         t->prev->next = t->next;
     }
     else {
-        //если удаляем начало, то новое начало следующее
-        head = t->next;
+        head = t->next; // если удаляем начало, то новое начало следующее
     }
 
-    if (t->next != nullptr) {
+    if (t->next != nullptr) {   
         t->next->prev = t->prev;
     }
     else {
-        //если удаляем конец, то новый конец предыдущий
-        tail = t->prev;
+        tail = t->prev; //если удаляем конец, то новый конец предыдущий
     }
 
     registry.erase(id);  //удаляем из карты
