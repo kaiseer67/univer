@@ -274,7 +274,7 @@ int main() {
     else {
         Task* current = head;
         int count = 0;
-        while (current != nullptr && count < 20) {
+        while (current != nullptr and count < 20) {
             cout << "id: " << current->id << " Значение: " << current->value << endl;
             current = current->next;
             count++;
