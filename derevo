@@ -1,0 +1,266 @@
+#include <iostream>
+#include <vector>
+#include <random>
+#include <algorithm>
+#include <windows.h>
+#include <cstdlib>
+#include <ctime>
+#include <iso646.h>
+
+using namespace std;
+
+void SetRuCon() {
+    SetConsoleCP(1251); 
+    SetConsoleOutputCP(1251); 
+}
+
+struct BSTNode {
+    int value; // число в узле
+    BSTNode* left; // указатель меньших
+    BSTNode* right; 
+
+    BSTNode(int v) {
+        value = v; //принимаемтчисло для записи в узел
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+void insertBST(BSTNode*& root, int val) { //ссылка на указатель
+    if (root == nullptr) {
+        root = new BSTNode(val); //если место пустое то создаем новый узел и вставляем
+        return;
+    }
+    if (val < root->value) {
+        insertBST(root->left, val);//если число меньше, чем в узле, то идем влево
+    }
+    else {
+        insertBST(root->right, val);
+    }
+}
+
+void printBST(BSTNode* node, int depth) {
+    if (node == nullptr) { //eсли узел пустой — выходим
+        return;
+    } 
+
+    printBST(node->right, depth + 1); //печатаем правую часть 
+    cout << string(depth * 2, ' ') << node->value << "\n"; //печатаем отступ и значение узла
+    printBST(node->left, depth + 1);//печатаем левую часть 
+}
+
+void inOrder(BSTNode* node) { //проверяем дерево
+    if (node == nullptr) {
+        return;
+    }
+
+    inOrder(node->left); //идем влево рекурсивно
+    cout << node->value << " ";//пишем узлы начиная с конца
+    inOrder(node->right);
+}
+
+struct BNode {//узел Bдерева
+    vector<int> keys; // массив чисел в узле
+    vector<BNode*> children; 
+    BNode() {
+    }
+};
+
+
+void splitChild(BNode* parent, int idx, int M) { // делим переполненный узел
+    BNode* fullNode = parent->children[idx]; // узел, который делим
+    BNode* newNode = new BNode(); // новый узел для правой части
+    int mid = M / 2; // индекс среднего ключа
+
+    for (int i = mid + 1; i < fullNode->keys.size(); i++) { // переносим правые ключи
+        newNode->keys.push_back(fullNode->keys[i]);
+    }
+
+    if (!fullNode->children.empty()) {// если есть дети — переносим правых детей
+        for (int i = mid + 1; i < fullNode->children.size(); i++) {
+            newNode->children.push_back(fullNode->children[i]);
+        }
+    }
+
+    // обрезаем старый узел
+    fullNode->keys.resize(mid);
+    if (!fullNode->children.empty()) {
+        fullNode->children.resize(mid + 1);
+    }
+
+    // поднимаем средний ключ в родителя
+    parent->keys.insert(parent->keys.begin() + idx, fullNode->keys[mid]);
+    // вставляем новый узел в родителя
+    parent->children.insert(parent->children.begin() + idx + 1, newNode);
+}
+
+
+void insertNonFull(BNode* node, int key, int M) {//вставка в узел, который не переполнен
+    int i = 0;
+
+
+    if (node->children.empty()) {// если лист, то вставляем прямо сюда
+        node->keys.push_back(key);
+        sort(node->keys.begin(), node->keys.end());//упорядочиваем
+        return;
+    }
+
+    // ищем куда спускаться
+    while (i < node->keys.size() and key >= node->keys[i]) {
+        i++;
+    }
+
+    // если ребёнок переполнен — делим его
+    if (node->children[i]->keys.size() == M) { //проверка не переполнен
+        splitChild(node, i, M);//делим
+        if (key > node->keys[i]) {
+            i++; // если ключ больше поднявшегося, то сдвигаем индекс вправо
+        }
+    }
+    insertNonFull(node->children[i], key, M); //спускаемся в выбраного ребенка
+}
+
+// главная вставка в B-дерево
+void insertBTree(BNode*& root, int key, int M) {
+    if (root == nullptr) {// если дерево пустое
+        root = new BNode();// создаём новый корень
+        root->keys.push_back(key);// кладём первый ключ в корень
+        return;
+    }
+
+    // если корень переполнен — создаём новый корень
+    if (root->keys.size() == M) {//если корень переполнен — создаём новый корень
+        BNode* newRoot = new BNode();//создаём новый корень
+        newRoot->children.push_back(root);// старый корень делаем первым ребёнком нового
+        splitChild(newRoot, 0, M);// делим старый корень
+        root = newRoot;// новый корень становится главным
+
+        int childIdx;// переменная для выбора ребёнка
+        if (key > root->keys[0]) {// переменная для выбора ребёнка
+            childIdx = 1; // идём ко второму ребёнку
+        }
+        else {
+            childIdx = 0; // идём к первому ребёнку
+        }
+        insertNonFull(root->children[childIdx], key, M); //вставляем ключ в выбранного ребёнка
+    }
+    else {
+        insertNonFull(root, key, M);//ключ сразу в корень
+    }
+}
+
+// печать узла B-дерева
+void printBNode(BNode* node, string prefix) { // принимаем узел и отступ
+    if (node == nullptr) return; // если узел пустой — выходим
+
+    cout << prefix << "├──["; // печатаем отступ, ветку и открывающую скобку
+    for (size_t i = 0; i < node->keys.size(); ++i) { // перебираем все ключи в узле
+        cout << node->keys[i]; // печатаем значение ключа
+        if (i != node->keys.size() - 1) { // если это не последний ключ
+            cout << " | "; // печатаем разделитель
+        }
+    }
+    cout << "]\n"; // закрываем скобку и переходим на новую строку
+
+    string newPrefix = prefix + "│   "; // обновляем отступ для детей
+    for (size_t i = 0; i < node->children.size(); ++i) { // перебираем всех детей
+        printBNode(node->children[i], newPrefix); // рекурсивно печатаем ребёнка
+    }
+}
+
+// печать всего B-дерева
+void printBTree(BNode* root) {
+    printBNode(root, "");
+}
+
+// ===== Утилиты =====
+int readInt(string prompt, int minV, int maxV) {
+    int val; // переменная для значения
+    while (true) { // повторяем пока не введут правильно
+        cout << prompt;
+        cin >> val;
+        if (cin.fail() or val < minV or val > maxV) {
+            cin.clear();
+            cin.ignore(10000, '\n');
+            cout << "Ошибка. Введите число от " << minV << " до " << maxV << ".\n";
+        }
+        else {
+            cin.ignore(10000, '\n');
+            return val;
+        }
+    }
+}
+
+vector<int> getData(int& N) {
+    N = readInt("Введите количество элементов N (1-50): ", 1, 50);
+    int mode = readInt("1. Ручной ввод\n2. Автогенерация (1..N)\nВаш выбор: ", 1, 2);
+
+    vector<int> data(N); // создаём вектор нужного размера
+    if (mode == 1) {
+        cout << "Введите " << N << " чисел через пробел: ";
+        for (int i = 0; i < N; ++i) cin >> data[i];
+        cin.ignore(10000, '\n');
+    }
+    else {
+        for (int i = 0; i < N; ++i) {
+            data[i] = rand() % N + 1; // число от 1 до N
+        }
+    }
+    return data;
+}
+
+// ===== Запуск BST =====
+void runBST() {
+    int N; // количество элементов
+    vector<int> nums = getData(N);
+    BSTNode* root = nullptr; // пустой корень
+    for (int i = 0; i < nums.size(); i++) {
+        insertBST(root, nums[i]); // вставляем все числа
+    } 
+
+    cout << "\n BST (правая ветка сверху) \n";
+    printBST(root, 0);
+    cout << "\nПроверка (In-Order): ";
+    inOrder(root);
+    cout << "\n\n";
+}
+
+// ===== Запуск B-дерева =====
+void runBTree() {
+    int M = readInt("Введите порядок дерева M (3-5): ", 3, 5);
+    int N;
+    vector<int> nums = getData(N);
+
+    BNode* root = nullptr; // пустой корень B-дерева
+    cout << "\n--- Построение B-дерева (M=" << M << ") ---\n";
+    for (int i = 0; i < nums.size(); i++) { // идём по всем числам
+        insertBTree(root, nums[i], M); // вставляем очередное число в дерево
+        printBTree(root); // печатаем дерево после вставки
+        cout << "-----------------------\n";
+    }
+}
+
+int main() {
+    SetRuCon();
+
+    srand(time(0));
+
+    while (true) {
+        cout << "МЕНЮ\n";
+        cout << "1. Бинарное дерево поиска (BST)\n";
+        cout << "2. B-дерево\n";
+        cout << "3. Выход\n";
+        int choice = readInt("Выберите пункт: ", 1, 3);
+
+        if (choice == 3) {
+            break;
+        }
+        if (choice == 1) {
+            runBST();
+        }
+        else {
+            runBTree();
+        }
+    }
+    return 0;
+}
