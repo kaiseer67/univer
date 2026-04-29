@@ -2,13 +2,10 @@
 #include <string>
 #include <map>
 #include <windows.h>
-#include <iostream>
 #include <fstream>
-#include <chrono> 
+#include <ctime>
 
-using namespace chrono;
 using namespace std;
-
 
 void SetRuCon() {
     SetConsoleCP(1251);
@@ -16,270 +13,313 @@ void SetRuCon() {
 }
 
 struct Task {
-    int id;       //номер задачи
-    int value;    //значение задачи
-    Task* next;   //ссылка на следующую
-    Task* prev;   //ссылка на предыдущую
+    int id;
+    int value;
+    Task* next;
+    Task* prev;
 };
 
-
-Task* head = nullptr; //начало списка, я знаю, что вы спросите нуллптр = пустой адрес 
-Task* tail = nullptr; //конец списка, нужны чтобы добавлять вперед и назад задачи
-map<int, Task*> registry; //в требовании написано    
+Task* head = nullptr;
+Task* tail = nullptr;
+map<int, Task*> registry;
 
 
 void add(int id, int value) {
-    Task* t = new Task; // создаём новую задачу
-    t->id = id;         // записываем id
-    t->value = value;   // записываем значение
-    t->next = nullptr;  // после неё пока ничего нет
-    t->prev = tail; // перед ней - старый хвост
+    if (registry.find(id) != registry.end()) {
+        cout << "ID " << id << " уже существует, пропущено" << endl; // ← ДОБАВЛЕНО
+        return;
+    }
 
-    if (tail != nullptr) {// если список не пустой, соединяем с старой задачей
+    Task* t = new Task;
+    t->id = id;
+    t->value = value;
+    t->next = nullptr;
+    t->prev = tail;
+
+    if (tail != nullptr) {
         tail->next = t;
     }
-    else { //если список был пустой, новая задача становится в начале
+    else {
         head = t;
     }
+    tail = t;
+    registry[id] = t;
 
-    tail = t;                //теперь она - хвост
-    registry[id] = t;        //запоминаем адрес в карте для getvalue и movefront
+    cout << "add: id=" << id << " value=" << value << " — добавлено" << endl; // ← ДОБАВЛЕНО
 }
 
 
-void moveFront(int id) { //задача в начало
-    if (registry.find(id) == registry.end()) { //проверяем есть ли такая задача
+void moveFront(int id) {
+    if (registry.find(id) == registry.end()) {
+        cout << "movetofront: id=" << id << " — не найдено" << endl; // ← ДОБАВЛЕНО
+        return;
+    }
+    Task* t = registry[id];
+
+    if (t == head) {
+        cout << "movetofront: id=" << id << " — уже в начале" << endl; // ← ДОБАВЛЕНО
         return;
     }
 
-    Task* t = registry[id]; //берём задачу из карты
+    if (t->prev != nullptr) t->prev->next = t->next;
+    if (t->next != nullptr) t->next->prev = t->prev;
+    if (t == tail) tail = t->prev;
 
-    if (t == head) { //если первая, то ниче не делаем
-        return;
-    }
+    t->prev = nullptr;
+    t->next = head;
+    if (head != nullptr) head->prev = t;
+    head = t;
 
-    if (t->prev != nullptr) { // Если есть задача перед нашей
-        t->prev->next = t->next;
-    }
-    if (t->next != nullptr) {
-        t->next->prev = t->prev;
-    }
-    else {
-        tail = t->prev; //если наша задача была последней, то обновляем конец
-    }
-
-    //вставляем задачу в начало
-    t->prev = nullptr;       //перед ней теперь ничего
-    t->next = head;          //после неё - старая голова
-    head->prev = t;
-    head = t;                //новая задача становится головой
+    cout << "movetofront: id=" << id << " — перемещено в начало" << endl; // ← ДОБАВЛЕНО
 }
 
 
 void getValue(int id) {
-    if (registry.find(id) == registry.end()) { //если задачи нет - выходим
+    if (registry.find(id) == registry.end()) {
+        cout << "getvalue: id=" << id << " — не найдено" << endl; // ← ДОБАВЛЕНО
         return;
     }
-    cout << registry[id]->value << endl; //берем задачу и выводим значение
+    cout << "getvalue: id=" << id << " → значение: " << registry[id]->value << endl; // ← ИЗМЕНЕНО
 }
 
-void insertAfter(int targetId, int newId, int value) { //создает новую задачу и вставляет после указанной
-    if (registry.find(targetId) == registry.end()) { //проверяем, есть ли целевая задача
+
+void insertAfter(int targetId, int newId, int value) {
+    if (registry.find(targetId) == registry.end()) {
+        cout << "insertafter: целевая " << targetId << " не найдена" << endl; // ← ДОБАВЛЕНО
+        return;
+    }
+    if (registry.find(newId) != registry.end()) {
+        cout << "insertafter: id=" << newId << " уже существует" << endl; // ← ДОБАВЛЕНО
         return;
     }
 
-    Task* target = registry[targetId];  //находим целевую задачу
-    Task* t = new Task;                 //создаём новую
+    Task* target = registry[targetId];
+    Task* t = new Task;
     t->id = newId;
     t->value = value;
 
-    t->next = target->next; //вставляем после целево
+    t->next = target->next;
     t->prev = target;
+    target->next = t;
 
-    if (target->next != nullptr) {
-        target->next->prev = t;
+    if (t->next != nullptr) {
+        t->next->prev = t;
     }
     else {
-        tail = t; //если целевая была концом, обновляем конец
+        tail = t;
     }
+    registry[newId] = t;
 
-    target->next = t;
-    registry[newId] = t;  //запоминаем в регистре
+    cout << "insertafter: id=" << newId << " вставлен после " << targetId << endl; // ← ДОБАВЛЕНО
 }
 
-void spliceRange(int idFrom, int idTo) { //диапозон кидает в начало
-    if (registry.find(idFrom) == registry.end() or registry.find(idTo) == registry.end()) {
+
+void spliceRange(int idFrom, int idTo) {
+    if (registry.find(idFrom) == registry.end() || registry.find(idTo) == registry.end()) {
+        cout << "splicerange: одна из задач не найдена" << endl; // ← ДОБАВЛЕНО
         return;
     }
 
     Task* from = registry[idFrom];
     Task* to = registry[idTo];
 
-    if (from == head) { //eсли уже в начале — ничего не делаем
+    Task* check = from;
+    bool valid = false;
+    while (check != nullptr) {
+        if (check == to) { valid = true; break; }
+        check = check->next;
+    }
+    if (!valid) {
+        cout << "splicerange: неверный диапазон" << endl; // ← ДОБАВЛЕНО
         return;
     }
 
-    Task* beforeFrom = from->prev; //запоминаем соседей диапазона
+    if (from == head) {
+        cout << "splicerange: уже в начале" << endl; // ← ДОБАВЛЕНО
+        return;
+    }
+
+    Task* beforeFrom = from->prev;
     Task* afterTo = to->next;
 
-    if (beforeFrom != nullptr) { //вытаскиваем диапазон 
-        beforeFrom->next = afterTo;
-    }
-    if (afterTo != nullptr) {
-        afterTo->prev = beforeFrom;
-    }
-    else {
-        tail = beforeFrom; //если to был концом
-    }
+    if (beforeFrom != nullptr) beforeFrom->next = afterTo;
+    if (afterTo != nullptr) afterTo->prev = beforeFrom;
+    if (to == tail) tail = beforeFrom;
 
-    from->prev = nullptr;//вставляем диапазон в начало
+    from->prev = nullptr;
     to->next = head;
-    head->prev = to;
+    if (head != nullptr) head->prev = to;
     head = from;
+
+    cout << "splicerange: диапазон [" << idFrom << "-" << idTo << "] перемещён в начало" << endl; // ← ДОБАВЛЕНО
 }
 
 
 void remove(int id) {
-    if (registry.find(id) == registry.end()) {//проверка
+    if (registry.find(id) == registry.end()) {
+        cout << "remove: id=" << id << " не найдена" << endl; // ← ДОБАВЛЕНО
         return;
     }
 
     Task* t = registry[id];
 
-    if (t->prev != nullptr) { //вырезаем из списка
-        t->prev->next = t->next;
-    }
-    else {
-        head = t->next; // если удаляем начало, то новое начало следующее
-    }
+    if (t->prev != nullptr) t->prev->next = t->next;
+    else head = t->next;
 
-    if (t->next != nullptr) {
-        t->next->prev = t->prev;
-    }
-    else {
-        tail = t->prev; //если удаляем конец, то новый конец предыдущий
-    }
+    if (t->next != nullptr) t->next->prev = t->prev;
+    else tail = t->prev;
 
-    registry.erase(id);  //удаляем из карты
+    registry.erase(id);
     delete t;
+
+    cout << "remove: id=" << id << " — удалено" << endl; // ← ДОБАВЛЕНО
 }
-int main() {
-    SetRuCon();
-
-    ifstream fin("a.txt");
-    int n;
-
-    auto start = high_resolution_clock::now();
 
 
 
-    if (fin.is_open()) {
-        //cout << "Чтение команд из input.txt..." << endl;
-        fin >> n; 
-
-        for (int i = 0; i < n; i++) {
-            string cmd;
-            fin >> cmd; 
-
-            if (cmd == "add") {
-                int id, val; fin >> id >> val;
-                add(id, val);
-            }
-            else if (cmd == "movetofront") {
-                int id; fin >> id;
-                moveFront(id);
-            }
-            else if (cmd == "getvalue") {
-                int id; fin >> id;
-                getValue(id);
-            }
-            else if (cmd == "remove") {
-                int id; fin >> id;
-                remove(id);
-            }
-            else if (cmd == "insertafter") {
-                int targetId, newId, val; fin >> targetId >> newId >> val;
-                insertAfter(targetId, newId, val);
-            }
-            else if (cmd == "splicerange") {
-                int idFrom, idTo; fin >> idFrom >> idTo;
-                spliceRange(idFrom, idTo);
-            }
-        }
-        auto end = high_resolution_clock::now();
-        auto duration = duration_cast<milliseconds>(end - start);
-        cout << "Время выполнения: " << duration.count() << " мс" << endl;
-        fin.close();
-    }
-    else {
-        cout << "Введите количество операций: " << endl;
-        cin >> n;
-
-        for (int i = 0; i < n; i++) {
-            cout << "Введите команду (add, movetofront, getvalue, remove, insertafter, splicerange): ";
-            string cmd;            cin >> cmd;
-
-            if (cmd == "add") {
-                int id, val;
-                cout << "Введите ID и значение: ";
-                cin >> id >> val;
-                add(id, val);
-            }
-            else if (cmd == "movetofront") {
-                int id;
-                cout << "Введите ID задачи: ";
-                cin >> id;
-                moveFront(id);
-            }
-            else if (cmd == "getvalue") {
-                int id;
-                cout << "Введите ID задачи: ";
-                cin >> id;
-                cout << "Результат: ";
-                getValue(id);
-            }
-            else if (cmd == "remove") {
-                int id;
-                cout << "Введите ID задачи: ";
-                cin >> id;
-                remove(id);
-            }
-            else if (cmd == "insertafter") {
-                int targetId, newId, val;
-                cout << "Введите ID целевой, новый ID и значение: ";
-                cin >> targetId >> newId >> val;
-                insertAfter(targetId, newId, val);
-            }
-            else if (cmd == "splicerange") {
-                int idFrom, idTo;
-                cout << "Введите ID начала и конца диапазона: ";
-                cin >> idFrom >> idTo;
-                spliceRange(idFrom, idTo);
-            }
-            else {
-                cout << "Неизвестная команда" << endl;
-            }
-        }
-    }
-
-
-    cout << "\nИтоговый список задач:" << endl;
+void printList(bool debug = false) {
+    cout << "\n Итоговый список задач:" << endl;
     if (head == nullptr) {
-        cout << "Список пуст" << endl;
+        cout << "  (список пуст)" << endl;
     }
     else {
         Task* current = head;
         int count = 0;
-        while (current != nullptr && count < 20) {
-            cout << "id: " << current->id << " Значение: " << current->value << endl;
+        while (current != nullptr) {
+            if (debug) {
+                cout << "  [" << count + 1 << "] id=" << current->id
+                    << " val=" << current->value
+                    << " prev=" << (current->prev ? to_string(current->prev->id) : "null")
+                    << " next=" << (current->next ? to_string(current->next->id) : "null") << endl;
+            }
+            else {
+                cout << "  id: " << current->id << " | Значение: " << current->value << endl;
+            }
             current = current->next;
             count++;
         }
-        if (registry.size() > 20) {
-            cout << "... и ещё " << (registry.size() - 20) << " задач" << endl;
+        cout << "  Показано задач: " << count << endl;
+    }
+    cout << "Всего в registry: " << registry.size() << endl;
+}
+
+//int countListNodes() {
+//    int cnt = 0;
+//    Task* p = head;
+ //   while (p != nullptr) { cnt++; p = p->next; if (cnt > 10000) break; }
+ //   return cnt;
+//}
+
+
+
+int main() {
+    SetRuCon();
+
+    string filename;
+    cout << " Менеджер задач " << endl;
+    cout << "Выберите источник данных:" << endl;
+    cout << "  1 - a.txt" << endl;
+    cout << "  2 - b.txt" << endl;
+    cout << "  Enter - ручной ввод" << endl;
+    getline(cin, filename);
+
+    ifstream fin;
+    bool useFile = false;
+
+    if (filename == "1" || filename == "a.txt") {
+        fin.open("a.txt");
+        useFile = fin.is_open();
+        if (useFile) filename = "a.txt";
+    }
+    else if (filename == "2" || filename == "b.txt") {
+        fin.open("b.txt");
+        useFile = fin.is_open();
+        if (useFile) filename = "b.txt";
+    }
+
+    int n;
+    clock_t start = clock(), end;
+
+    if (useFile) {
+        cout << "Чтение из файла: " << filename << "..." << endl;
+        fin >> n;
+        cout << "Обработка " << n << " операций..." << endl;
+
+        for (int i = 0; i < n; i++) {
+            string cmd;
+            if (!(fin >> cmd)) break;
+
+            if (cmd == "add") {
+                int id, val; fin >> id >> val; add(id, val);
+            }
+            else if (cmd == "movetofront") { int id; fin >> id; moveFront(id); }
+            else if (cmd == "getvalue") { int id; fin >> id; getValue(id); }
+            else if (cmd == "remove") { int id; fin >> id; remove(id); }
+            else if (cmd == "insertafter") {
+                int tId, nId, val; fin >> tId >> nId >> val;
+                insertAfter(tId, nId, val);
+            }
+            else if (cmd == "splicerange") {
+                int f, t; fin >> f >> t; spliceRange(f, t);
+            }
+        }
+        fin.close();
+    }
+    else {
+        cout << " Ручной режим" << endl;
+        cout << "Введите количество операций: ";
+        cin >> n;
+
+        for (int i = 0; i < n; i++) {
+            string cmd;
+            cout << "[" << i + 1 << "/" << n << "] Команда: ";
+            cin >> cmd;
+
+            if (cmd == "add") {
+                int id, val; cin >> id >> val; add(id, val);
+            }
+            else if (cmd == "movetofront") { int id; cin >> id; moveFront(id); }
+            else if (cmd == "getvalue") { int id; cin >> id; getValue(id); }
+            else if (cmd == "remove") { int id; cin >> id; remove(id); }
+            else if (cmd == "insertafter") {
+                int tId, nId, val; cin >> tId >> nId >> val;
+                insertAfter(tId, nId, val);
+            }
+            else if (cmd == "splicerange") {
+                int f, t; cin >> f >> t; spliceRange(f, t);
+            }
+            else {
+                cout << " Неизвестная команда" << endl;
+            }
         }
     }
-    cout << "Всего задач: " << registry.size() << endl;
 
+    end = clock();
+
+   // int listCount = countListNodes();
+    cout << "\nДиагностика:" << endl;
+   // cout << "  Узлов в списке: " << listCount << endl;
+    cout << "  Записей в registry: " << registry.size() << endl;
+   // if (listCount != (int)registry.size()) {
+     //   cout << " рассинхронизация списка и registry!" << endl;
+    //}
+
+
+    printList(false); // false = обычный вывод, true = отладка с указателями
+
+    double ms = double(end - start) * 1000.0 / CLOCKS_PER_SEC;
+    cout << "Время выполнения: " << ms << " мс" << endl;
+
+    Task* cur = head;
+    while (cur != nullptr) {
+        Task* next = cur->next;
+        delete cur;
+        cur = next;
+    }
+    registry.clear();
+    head = tail = nullptr;
+
+    cout << "\n Программа завершена" << endl;
+    system("pause");
     return 0;
 }
