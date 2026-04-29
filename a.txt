@@ -1,0 +1,16 @@
+15
+add 1 100
+add 2 200
+add 3 300
+add 4 400
+add 5 500
+add 6 600
+add 7 700
+add 8 800
+add 9 900
+add 10 1000
+getvalue 5
+movetofront 3
+insertafter 1 11 1100   // +1 задача
+insertafter 10 12 1200  // +1 задача
+splicerange 4 7         // без удаления
