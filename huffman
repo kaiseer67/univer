@@ -1,0 +1,116 @@
+#include <iostream>
+#include <string>
+#include <map>
+#include <queue>
+
+using namespace std;
+
+map<char, string> resultTable; //таблица для хранения результатов, чар - буква, стринг - значение
+
+
+struct Node {
+    char ch;
+    int freq;
+    Node* left; //левый сын
+    Node* right; //правый сын
+};
+
+
+Node* createNode(char ch, int freq, Node* left, Node* right) { //нужно для новых узлов
+    Node* node = new Node();
+    node->ch = ch;  //записываем внутрь символа букву.
+    node->freq = freq; //записываем внутрь частоту.
+    node->left = left; //привязываем левого сына
+    node->right = right; //привязываем правого сына
+    return node;
+}
+
+
+struct Compare {
+    bool operator()(Node* a, Node* b) {
+        return a->freq > b->freq;
+    }
+};
+
+
+void findCodes(Node* root, string code) { //root — текущий узел в котором мы находимся
+    //code — строка которую мы собрали по пути от самого верха до сюда 
+    if (root == NULL) { 
+        return;
+    }
+
+    //если это лист буква
+    if (root->left == NULL and root->right == NULL) {
+        resultTable[root->ch] = code; //записываем в таблицу
+    }
+
+    findCodes(root->left, code + "0"); //идем влево добавляем 0
+    findCodes(root->right, code + "1"); //идем вправо добавляем 1
+}
+
+int main() {
+    string text;
+    cout << "Vedite stroku: ";
+    getline(cin, text);
+
+    if (text.length() == 0) {
+        cout << "Stroka pustaya." << endl;
+        return 0;
+    }
+
+    //подсчет частот
+    map<char, int> freqMap; //символ кол-во
+    for (int i = 0; i < text.length(); i++) {
+        freqMap[text[i]]++;
+    }
+
+    //1 символ
+    if (freqMap.size() == 1) {
+        cout << "Symvol | Chastota | Kod" << endl;
+        cout << "-------|----------|----" << endl;
+        char c = freqMap.begin()->first; //буква
+        int f = freqMap.begin()->second; //частота
+        cout << " '" << c << "'   | " << f << "        | 0" << endl;
+        return 0;
+    }
+
+    // Очередь
+    priority_queue<Node*, vector<Node*>, Compare> pq;
+
+    for (auto it = freqMap.begin(); it != freqMap.end(); it++) {// it — это итератор, он бегает по карте freqmap
+        // it->first — буква, it->second — частота.
+        // Заполняем очередь начальными узлами
+        pq.push(createNode(it->first, it->second, NULL, NULL));  
+        // Создаем узел для этой буквы и кладем его в очередь.
+    }
+
+    //построение дерева
+    while (pq.size() > 1) {
+        Node* l = pq.top(); pq.pop(); //левый сын
+        Node* r = pq.top(); pq.pop(); //правый сын
+
+        Node* parent = createNode('\0', l->freq + r->freq, l, r);
+        pq.push(parent);
+    }
+
+    Node* root = pq.top();
+
+    //заполняем таблицу
+    findCodes(root, "");
+
+    //вывод таблицы
+    cout << endl;
+    cout << "Symbol | Chastota | Kod Huffman" << endl;
+    cout << "-------|----------|------------" << endl;
+
+    //проходим по исходной карте частот для вывода букв в алфафитном порядке
+    for (auto it = freqMap.begin(); it != freqMap.end(); it++) {
+        char sym = it->first; //буква
+        int freq = it->second; //частота
+        string code = resultTable[sym];
+
+        cout << " '" << sym << "'   | " << freq << "        | " << code << endl;
+    }
+
+    return 0;
+}
