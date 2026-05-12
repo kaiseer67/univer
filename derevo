@@ -39,19 +39,18 @@ void insertBST(BSTNode*& root, int val) { //ссылка на указатель
     }
 }
 
-void printBST(BSTNode* node, int depth) {
-    if (node == nullptr) { //eсли узел пустой — выходим
+void printBST(BSTNode* node, string prefix) {
+    if (node == nullptr) {
         return;
     }
-    for (int i = 0; i < depth; i++) {
-        cout << "    ";
-    }
+    //левый ребенок 
+    printBST(node->left, prefix + "    ");
 
-   // cout << string(depth * 4, ' '); //печатаем отступ и значение узла
-    cout << " |--[ " << node->value << " ]\n";
+    //печатаем узел
+    cout << prefix << "|--[" << node->value << "]\n";
 
-    printBST(node->left, depth + 1);//печатаем левую часть 
-    printBST(node->right, depth + 1); //печатаем правую часть 
+    //потом правый ребенок
+    printBST(node->right, prefix + "    ");
 }
 
 void inOrder(BSTNode* node) { //проверяем дерево
@@ -234,9 +233,9 @@ void runBST() {
         insertBST(root, nums[i]); // вставляем все числа
     }
 
-    cout << "\n BST (правая ветка сверху) \n";
-    printBST(root, 0);
-    cout << "\nПроверка (In-Order): ";
+    cout << "\n--- BST (правая ветка сверху) ---\n";
+    printBST(root, ""); 
+    cout << "\nПроверка: ";
     inOrder(root);
     cout << "\n\n";
 }
@@ -263,7 +262,7 @@ int main() {
 
     while (true) {
         cout << "МЕНЮ\n";
-        cout << "1. Бинарное дерево поиска (BST)\n";
+        cout << "1. BST\n";
         cout << "2. B-дерево\n";
         cout << "3. Выход\n";
         int choice = readInt("Выберите пункт: ", 1, 3);
