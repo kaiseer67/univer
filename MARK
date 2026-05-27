@@ -9,77 +9,61 @@
 #include <random>
 using namespace std;
 
+unordered_map<string, unordered_map<string, int>> cultured_chain;
 
-//void SetRuCon() {
-   // SetConsoleCP(1251);
-  //  SetConsoleOutputCP(1251);
-//}
-
-
-unordered_map <string, unordered_map<string, int>> cultured_chain;
-unordered_map <string, unordered_map<string, int>> uncultured_chain;
-
-vector<string> tokenize(const string& text, bool keep_punct) {
-    vector<string> tokens;
-    string token;
-    istringstream stream(text);
-
-    while (stream >> token) {
-        if (!keep_punct) {
-            token.erase(remove_if(token.begin(), token.end(),
-                [](unsigned char c) { return ispunct(c); }), token.end());
-        }
-        transform(token.begin(), token.end(), token.begin(),
-            [](unsigned char c) { return tolower(c); });
-        if (!token.empty()) tokens.push_back(token);
-    }
-    return tokens;
-}
-
-void train(const string& filename, unordered_map <string, unordered_map<string, int>>& chain, bool keep_punct) {
+void train(const string& filename, unordered_map<string, unordered_map<string, int>>& chain) {
     ifstream file(filename);
-    if (!file.is_open()) {
-        cerr << "Не открылся файл: " << filename << endl;
-        return;
-    }
+    if (!file.is_open()) return;
 
     string prev, word;
     bool first = true;
 
     while (file >> word) {
-        if (!keep_punct) {
-            word.erase(remove_if(word.begin(), word.end(),
-                [](unsigned char c) { return ispunct(c); }), word.end());
-        }
+        word.erase(remove_if(word.begin(), word.end(),
+            [](unsigned char c) { return ispunct(c); }), word.end());
         transform(word.begin(), word.end(), word.begin(),
             [](unsigned char c) { return tolower(c); });
 
         if (word.empty()) continue;
 
-        if (!first) {
-            chain[prev][word]++;
-        }
+        if (!first) chain[prev][word]++;
         prev = word;
         first = false;
     }
 }
 
+void add_test_data() {
+    cultured_chain["привет"]["друг"] = 3;
+    cultured_chain["друг"]["как"] = 3;
+    cultured_chain["как"]["дела"] = 3;
+    cultured_chain["дела"]["хорошо"] = 2;
+    cultured_chain["дела"]["нормально"] = 2;
+    cultured_chain["хорошо"]["спасибо"] = 2;
+    cultured_chain["нормально"]["спасибо"] = 2;
+    cultured_chain["спасибо"]["большое"] = 2;
+    cultured_chain["большое"]["пожалуйста"] = 1;
+    cultured_chain["здравствуйте"]["чем"] = 2;
+    cultured_chain["чем"]["могу"] = 2;
+    cultured_chain["могу"]["помочь"] = 2;
+    cultured_chain["помочь"]["вам"] = 2;
+    cultured_chain["добрый"]["день"] = 2;
+    cultured_chain["день"]["желаю"] = 1;
+    cultured_chain["желаю"]["удачи"] = 1;
+    cultured_chain["че"]["как"] = 2;
+    cultured_chain["как"]["сам"] = 2;
+    cultured_chain["сам"]["норм"] = 1;
+}
+
 string choose_word(const unordered_map<string, int>& weights) {
     if (weights.empty()) return "";
-
     int total = 0;
-    // Исправлено: без structured bindings
-    for (const auto& pair : weights) {
-        total += pair.second;
-    }
+    for (const auto& pair : weights) total += pair.second;
 
-    static random_device seed;
-    static mt19937 gen(seed());
+    static mt19937 gen(random_device{}());
     uniform_int_distribution<> dist(0, total - 1);
-
     int r = dist(gen);
+
     int cumulative = 0;
-    // Исправлено: без structured bindings
     for (const auto& pair : weights) {
         cumulative += pair.second;
         if (r < cumulative) return pair.first;
@@ -87,64 +71,72 @@ string choose_word(const unordered_map<string, int>& weights) {
     return weights.begin()->first;
 }
 
-string generate(const string& input, unordered_map<string, unordered_map<string, int>>& chain, size_t max_words) {
-    vector<string> tokens = tokenize(input, false);
-    if (tokens.empty()) return "";
-
-    string result = tokens[0];
-    string current = tokens[0];
-
-    auto start_word_it = chain.find(current);
-
-    if (start_word_it == chain.end() || chain[current].empty()) {
-        if (chain.empty()) return "";
-
-        static random_device seed;
-        static mt19937 gen(seed());
-        uniform_int_distribution<> dist(0, chain.size() - 1);
-
-        string word = next(chain.begin(), dist(gen))->first;
-        result = word;
-        current = word;
-    }
-
-    for (size_t i = 0; i < max_words; ++i) {
-        auto it = chain.find(current);
-        if (it == chain.end() || it->second.empty()) break;
-
-        string next = choose_word(it->second);
-        result += " " + next;
-        current = next;
-    }
-
-    return result;
-}
-
 int main() {
-    //SetConsoleCP(65001);
-    //SetConsoleOutputCP(65001);
-    //system("chcp 65001 > nul");
-    //setlocale(LC_ALL, "rus");
+    // === ВАЖНО: используем CP1251 (кириллица Windows) ===
+    system("chcp 1251 > nul");
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
 
-    SetConsoleOutputCP(65001);  // UTF-8
-    setlocale(LC_ALL, "ru_RU.UTF-8");
-
-    train("cultured.txt", cultured_chain, true);
-    train("uncultured.txt", uncultured_chain, true);
+    // Загружаем данные
+    train("cultured.txt", cultured_chain);
+    if (cultured_chain.empty()) add_test_data();
 
     cout << "Введите строку: ";
     string input;
     getline(cin, input);
 
     if (input.empty()) {
-        cout << "напишите че нить" << endl;
+        cout << "Пустой ввод" << endl;
+        system("pause");
         return 0;
     }
 
-    unsigned int max_words = count(input.begin(), input.end(), ' ') + 1;
+    // Берём первое слово
+    string token;
+    istringstream iss(input);
+    iss >> token;
 
-    string result = generate(input, cultured_chain, max_words);
+    string current = token;
+    string result = input;
+
+    auto it = cultured_chain.find(current);
+
+    // Ищем похожее если не нашли
+    if (it == cultured_chain.end() || it->second.empty()) {
+        for (const auto& pair : cultured_chain) {
+            if (pair.first.find(current) != string::npos) {
+                current = pair.first;
+                it = cultured_chain.find(current);
+                break;
+            }
+        }
+    }
+
+    // Если всё равно не нашли — берём случайное
+    if (it == cultured_chain.end() || it->second.empty()) {
+        if (!cultured_chain.empty()) {
+            current = cultured_chain.begin()->first;
+        }
+        else {
+            cout << "База пуста" << endl;
+            system("pause");
+            return 0;
+        }
+    }
+
+    // Генерируем
+    for (int i = 0; i < 5; i++) {
+        auto next_it = cultured_chain.find(current);
+        if (next_it == cultured_chain.end() || next_it->second.empty()) break;
+
+        string next = choose_word(next_it->second);
+        if (next.empty()) break;
+
+        result += " " + next;
+        current = next;
+    }
+
     cout << "Результат: " << result << endl;
-
+    //system("pause");
     return 0;
 }
