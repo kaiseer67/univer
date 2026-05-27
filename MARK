@@ -1,0 +1,150 @@
+#include <iostream>
+#include <windows.h>
+#include <fstream>
+#include <vector>
+#include <unordered_map>
+#include <string>
+#include <sstream>
+#include <algorithm>
+#include <random>
+using namespace std;
+
+
+//void SetRuCon() {
+   // SetConsoleCP(1251);
+  //  SetConsoleOutputCP(1251);
+//}
+
+
+unordered_map <string, unordered_map<string, int>> cultured_chain;
+unordered_map <string, unordered_map<string, int>> uncultured_chain;
+
+vector<string> tokenize(const string& text, bool keep_punct) {
+    vector<string> tokens;
+    string token;
+    istringstream stream(text);
+
+    while (stream >> token) {
+        if (!keep_punct) {
+            token.erase(remove_if(token.begin(), token.end(),
+                [](unsigned char c) { return ispunct(c); }), token.end());
+        }
+        transform(token.begin(), token.end(), token.begin(),
+            [](unsigned char c) { return tolower(c); });
+        if (!token.empty()) tokens.push_back(token);
+    }
+    return tokens;
+}
+
+void train(const string& filename, unordered_map <string, unordered_map<string, int>>& chain, bool keep_punct) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Не открылся файл: " << filename << endl;
+        return;
+    }
+
+    string prev, word;
+    bool first = true;
+
+    while (file >> word) {
+        if (!keep_punct) {
+            word.erase(remove_if(word.begin(), word.end(),
+                [](unsigned char c) { return ispunct(c); }), word.end());
+        }
+        transform(word.begin(), word.end(), word.begin(),
+            [](unsigned char c) { return tolower(c); });
+
+        if (word.empty()) continue;
+
+        if (!first) {
+            chain[prev][word]++;
+        }
+        prev = word;
+        first = false;
+    }
+}
+
+string choose_word(const unordered_map<string, int>& weights) {
+    if (weights.empty()) return "";
+
+    int total = 0;
+    // Исправлено: без structured bindings
+    for (const auto& pair : weights) {
+        total += pair.second;
+    }
+
+    static random_device seed;
+    static mt19937 gen(seed());
+    uniform_int_distribution<> dist(0, total - 1);
+
+    int r = dist(gen);
+    int cumulative = 0;
+    // Исправлено: без structured bindings
+    for (const auto& pair : weights) {
+        cumulative += pair.second;
+        if (r < cumulative) return pair.first;
+    }
+    return weights.begin()->first;
+}
+
+string generate(const string& input, unordered_map<string, unordered_map<string, int>>& chain, size_t max_words) {
+    vector<string> tokens = tokenize(input, false);
+    if (tokens.empty()) return "";
+
+    string result = tokens[0];
+    string current = tokens[0];
+
+    auto start_word_it = chain.find(current);
+
+    if (start_word_it == chain.end() || chain[current].empty()) {
+        if (chain.empty()) return "";
+
+        static random_device seed;
+        static mt19937 gen(seed());
+        uniform_int_distribution<> dist(0, chain.size() - 1);
+
+        string word = next(chain.begin(), dist(gen))->first;
+        result = word;
+        current = word;
+    }
+
+    for (size_t i = 0; i < max_words; ++i) {
+        auto it = chain.find(current);
+        if (it == chain.end() || it->second.empty()) break;
+
+        string next = choose_word(it->second);
+        result += " " + next;
+        current = next;
+    }
+
+    return result;
+}
+
+int main() {
+    //SetConsoleCP(65001);
+    //SetConsoleOutputCP(65001);
+    //system("chcp 65001 > nul");
+    //setlocale(LC_ALL, "rus");
+
+    SetConsoleOutputCP(65001);  // UTF-8
+    setlocale(LC_ALL, "ru_RU.UTF-8");
+
+    train("cultured.txt", cultured_chain, true);
+    train("uncultured.txt", uncultured_chain, true);
+
+    cout << "Введите строку: ";
+    string input;
+    getline(cin, input);
+
+    if (input.empty()) {
+        cout << "напишите че нить" << endl;
+        return 0;
+    }
+
+    unsigned int max_words = count(input.begin(), input.end(), ' ') + 1;
+
+    string result = generate(input, cultured_chain, max_words);
+    cout << "Результат: " << result << endl;
+
+    return 0;
+}
