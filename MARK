@@ -72,12 +72,10 @@ string choose_word(const unordered_map<string, int>& weights) {
 }
 
 int main() {
-    // === ВАЖНО: используем CP1251 (кириллица Windows) ===
     system("chcp 1251 > nul");
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
 
-    // Загружаем данные
     train("cultured.txt", cultured_chain);
     if (cultured_chain.empty()) add_test_data();
 
@@ -91,17 +89,15 @@ int main() {
         return 0;
     }
 
-    // Берём первое слово
     string token;
     istringstream iss(input);
     iss >> token;
 
     string current = token;
-    string result = input;
+    string result = "";  // <-- ИСПРАВЛЕНО: начинаем с пустой строки
 
     auto it = cultured_chain.find(current);
 
-    // Ищем похожее если не нашли
     if (it == cultured_chain.end() || it->second.empty()) {
         for (const auto& pair : cultured_chain) {
             if (pair.first.find(current) != string::npos) {
@@ -112,7 +108,6 @@ int main() {
         }
     }
 
-    // Если всё равно не нашли — берём случайное
     if (it == cultured_chain.end() || it->second.empty()) {
         if (!cultured_chain.empty()) {
             current = cultured_chain.begin()->first;
@@ -124,7 +119,9 @@ int main() {
         }
     }
 
-    // Генерируем
+    // Начинаем генерацию с найденного слова
+    result = current;
+
     for (int i = 0; i < 5; i++) {
         auto next_it = cultured_chain.find(current);
         if (next_it == cultured_chain.end() || next_it->second.empty()) break;
@@ -137,6 +134,5 @@ int main() {
     }
 
     cout << "Результат: " << result << endl;
-    //system("pause");
     return 0;
 }
