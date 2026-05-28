@@ -1,0 +1,118 @@
+#include <iostream>
+//#include <windows.h>
+#include <fstream>
+#include <vector>
+#include <unordered_map>
+#include <string>
+#include <sstream>
+#include <algorithm>
+#include <random>
+using namespace std;
+
+unordered_map<string, unordered_map<string, int>> cultured_chain;
+
+void train(const string& filename, unordered_map<string, unordered_map<string, int>>& chain) {
+    ifstream file(filename);
+    if (!file.is_open()) return;
+
+    string prev, word;
+    bool first = true;
+
+    while (file >> word) {
+        word.erase(remove_if(word.begin(), word.end(),
+            [](unsigned char c) { return ispunct(c); }), word.end());
+        transform(word.begin(), word.end(), word.begin(),
+            [](unsigned char c) { return tolower(c); });
+
+        if (word.empty()) continue;
+
+        if (!first) chain[prev][word]++;
+        prev = word;
+        first = false;
+    }
+}
+
+void add_test_data() {
+    cultured_chain["привет"]["Здравствуйте"] = 3;
+    cultured_chain["йоу"]["Здравствуйте"] = 3;
+    cultured_chain["ку"]["Здравствуйте"] = 3;
+    cultured_chain["даров"]["Здравствуйте"] = 2;
+    cultured_chain["че"]["что"] = 3;
+    cultured_chain["как"]["как поживаете"] = 3;
+    cultured_chain["дела"]["как ваши дела"] = 2;
+    cultured_chain["ты"]["вы"] = 3;
+    cultured_chain["тебя"]["вас"] = 2;
+    cultured_chain["норм"]["хорошо"] = 3;
+    cultured_chain["нормально"]["хорошо"] = 2;
+    cultured_chain["ок"]["хорошо"] = 2;
+    cultured_chain["хорошо"]["отлично"] = 2;
+    cultured_chain["щас"]["сейчас"] = 3;
+    cultured_chain["спс"]["спасибо"] = 2;
+    cultured_chain["типа"][""] = 2;
+    cultured_chain["короче"][""] = 2;
+}
+
+string choose_word(const unordered_map<string, int>& weights) {
+    if (weights.empty()) return "";
+    int total = 0;
+    for (const auto& pair : weights) total += pair.second;
+
+    static mt19937 gen(random_device{}());
+    uniform_int_distribution<> dist(0, total - 1);
+    int r = dist(gen);
+
+    int cumulative = 0;
+    for (const auto& pair : weights) {
+        cumulative += pair.second;
+        if (r < cumulative) return pair.first;
+    }
+    return weights.begin()->first;
+}
+
+int main() {
+    //system("chcp 1251 > nul");
+    //SetConsoleCP(1251);
+    //SetConsoleOutputCP(1251);
+
+    // train("cultured.txt", cultured_chain);  
+    add_test_data();  
+
+    cout << "Введите строку: ";
+    string input;
+    getline(cin, input);
+
+    if (input.empty()) {
+        cout << "Пустой ввод" << endl;
+        return 0;
+    }
+
+    istringstream iss(input);
+    string token;
+    vector<string> results;
+
+    while (iss >> token) {
+        string current = token;
+        string replacement = "";
+    
+        auto it = cultured_chain.find(current);
+        if (it != cultured_chain.end() && !it->second.empty()) {
+            replacement = choose_word(it->second);
+        }
+    
+        //если нашли замену и она не пустая — используем её
+        if (!replacement.empty()) {
+            results.push_back(replacement);
+        }
+        //если не нашли или замена пустая — пропускаем слово
+    }
+
+    //собираем результат
+    string result = "";  
+    for (size_t i = 0; i < results.size(); i++) {
+        if (i > 0) result += " ";  // <-- result, а не results
+        result += results[i];
+    }
+
+    cout << "Результат: " << result << endl;
+    return 0;
+}
